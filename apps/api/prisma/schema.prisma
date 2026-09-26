@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  categories   Category[]
+  expenses     Expense[]
+  refreshTokens RefreshToken[]
+  resetToken   PasswordResetToken?
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  color     String?
+  createdAt DateTime @default(now())
+  expenses  Expense[]
+
+  @@unique([userId, name])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  amount      Decimal   @db.Decimal(10,2)
+  expenseDate DateTime  @default(now())
+  note        String?
+
+  @@index([userId, expenseDate])
+  @@index([userId, categoryId, expenseDate])
+}
+
+model RefreshToken {
+  tokenHash String  @id
+  jti       String
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  revokedAt DateTime?
+}
+
+model PasswordResetToken {
+  userId    String  @id
+  user      User    @relation(fields: [userId], references: [id])
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+}
